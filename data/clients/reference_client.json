@@ -1,0 +1,254 @@
+{
+  "client_id": "REF-001",
+  "name": "Reference Client",
+  "age": null,
+  "notes": "Illustrative reference client from the Inter IIT Tech Meet 15.0 / LPL Financial problem dossier. All figures are from the dossier and are illustrative only. Items marked UNRESOLVED require team clarification before calculations can proceed.",
+  "goals": {
+    "target_retirement_age": null,
+    "target_monthly_income": null,
+    "legacy_target": null,
+    "notes": "UNRESOLVED: retirement age, income target, and legacy goal not specified in dossier."
+  },
+  "constraints": {
+    "tax_filing_status": null,
+    "state_of_residence": null,
+    "risk_tolerance": null,
+    "liquidity_need_years": null,
+    "notes": "UNRESOLVED: tax filing status, state of residence, and risk tolerance not provided."
+  },
+  "ci_portfolio": {
+    "portfolio_id": "REF-001-CI",
+    "label": "CI",
+    "as_of_date": null,
+    "total_market_value": "700000",
+    "notes": "Current Investment Portfolio. Five sleeves. Total $700,000 per dossier.",
+    "accounts": [
+      {
+        "account_id": "ACCT-CI-01",
+        "account_type": "taxable_brokerage",
+        "label": "S&P 500 mutual fund account",
+        "custodian": null,
+        "notes": null
+      },
+      {
+        "account_id": "ACCT-CI-02",
+        "account_type": "annuity",
+        "label": "Vanguard annuity",
+        "custodian": "Vanguard",
+        "notes": "UNRESOLVED: annuity type (fixed, variable, indexed), contract terms, and surrender period not specified."
+      },
+      {
+        "account_id": "ACCT-CI-03",
+        "account_type": "traditional_ira",
+        "label": "Traditional IRA",
+        "custodian": null,
+        "notes": "Pre-tax account. Withdrawals taxed as ordinary income."
+      },
+      {
+        "account_id": "ACCT-CI-04",
+        "account_type": "unknown",
+        "label": "Real-estate fund of funds",
+        "custodian": null,
+        "notes": "UNRESOLVED: legal/tax structure of this real-estate fund vehicle is not confirmed in the dossier. AccountType set to UNKNOWN until clarified."
+      },
+      {
+        "account_id": "ACCT-CI-05",
+        "account_type": "taxable_brokerage",
+        "label": "Alternatives sleeve (crypto, bonds, gold)",
+        "custodian": null,
+        "notes": "UNRESOLVED: individual allocations among crypto, bonds, and gold are not provided."
+      }
+    ],
+    "holdings": [
+      {
+        "holding_id": "H-CI-01",
+        "account_id": "ACCT-CI-01",
+        "label": "S&P 500 mutual fund",
+        "asset_class": "equity",
+        "market_value": "50000",
+        "cost_basis": "10000",
+        "cost_basis_status": "known",
+        "liquidity_status": "liquid",
+        "fractional_eligible": "unknown",
+        "expense_ratio": "0.0075",
+        "exit_cost_pct": "0.01",
+        "notes": "Cost basis $10,000 per dossier. Unrealised gain = $40,000."
+      },
+      {
+        "holding_id": "H-CI-02",
+        "account_id": "ACCT-CI-02",
+        "label": "Vanguard annuity",
+        "asset_class": "annuity",
+        "market_value": "100000",
+        "cost_basis": null,
+        "cost_basis_status": "unknown",
+        "liquidity_status": "restricted",
+        "fractional_eligible": "ineligible",
+        "expense_ratio": null,
+        "exit_cost_pct": "0.01",
+        "notes": "UNRESOLVED: cost basis not provided. UNRESOLVED: '3% fixed lifetime income' — cannot determine whether this is a payout rate, guaranteed interest rate, or withdrawal rate without further clarification."
+      },
+      {
+        "holding_id": "H-CI-03",
+        "account_id": "ACCT-CI-03",
+        "label": "Traditional IRA (holdings unspecified)",
+        "asset_class": "unknown",
+        "market_value": "200000",
+        "cost_basis": null,
+        "cost_basis_status": "inapplicable",
+        "liquidity_status": "liquid",
+        "fractional_eligible": "unknown",
+        "expense_ratio": null,
+        "exit_cost_pct": null,
+        "notes": "Traditional IRA. Cost basis is inapplicable in the usual sense (pre-tax contributions; full withdrawal taxed as ordinary income). Underlying holdings not specified in dossier."
+      },
+      {
+        "holding_id": "H-CI-04",
+        "account_id": "ACCT-CI-04",
+        "label": "Real-estate fund of funds",
+        "asset_class": "real_estate",
+        "market_value": "250000",
+        "cost_basis": null,
+        "cost_basis_status": "unknown",
+        "liquidity_status": "illiquid",
+        "fractional_eligible": "ineligible",
+        "expense_ratio": null,
+        "exit_cost_pct": null,
+        "notes": "ILLIQUID — cannot be transitioned. Cost basis not provided."
+      },
+      {
+        "holding_id": "H-CI-05",
+        "account_id": "ACCT-CI-05",
+        "label": "Alternatives (crypto, bonds, gold)",
+        "asset_class": "alternatives",
+        "market_value": "100000",
+        "cost_basis": null,
+        "cost_basis_status": "unknown",
+        "liquidity_status": "partially_liquid",
+        "fractional_eligible": "unknown",
+        "expense_ratio": null,
+        "exit_cost_pct": null,
+        "notes": "UNRESOLVED: allocation split among crypto, bonds, and gold is not provided. Per-component cost basis unknown.",
+        "sub_holdings": []
+      }
+    ]
+  },
+  "pi_portfolio": {
+    "portfolio_id": "REF-001-PI",
+    "label": "PI",
+    "as_of_date": null,
+    "total_market_value": "700000",
+    "notes": "Proposed Investment Portfolio. Same total AUM assumed for illustration. Actual post-transition values depend on tax costs and fees, which are UNRESOLVED.",
+    "accounts": [
+      {
+        "account_id": "ACCT-PI-01",
+        "account_type": "taxable_brokerage",
+        "label": "Nasdaq-oriented fund account",
+        "custodian": null,
+        "notes": null
+      },
+      {
+        "account_id": "ACCT-PI-02",
+        "account_type": "annuity",
+        "label": "Fidelity annuity",
+        "custodian": "Fidelity",
+        "notes": "UNRESOLVED: annuity type, contract terms, surrender period, and product details not specified."
+      },
+      {
+        "account_id": "ACCT-PI-03",
+        "account_type": "roth_ira",
+        "label": "Roth IRA (converted from Traditional IRA)",
+        "custodian": null,
+        "notes": "UNRESOLVED: conversion amount not specified. UNRESOLVED: tax cost of conversion not specified."
+      },
+      {
+        "account_id": "ACCT-PI-04",
+        "account_type": "unknown",
+        "label": "Real-estate fund of funds (retained)",
+        "custodian": null,
+        "notes": "Retained — illiquid, no transition. Same as CI."
+      },
+      {
+        "account_id": "ACCT-PI-05",
+        "account_type": "taxable_brokerage",
+        "label": "Alternatives sleeve (retained)",
+        "custodian": null,
+        "notes": "Retained per dossier."
+      }
+    ],
+    "holdings": [
+      {
+        "holding_id": "H-PI-01",
+        "account_id": "ACCT-PI-01",
+        "label": "Nasdaq-oriented fund",
+        "asset_class": "equity",
+        "market_value": "50000",
+        "cost_basis": null,
+        "cost_basis_status": "unknown",
+        "liquidity_status": "liquid",
+        "fractional_eligible": "unknown",
+        "expense_ratio": "0.01",
+        "exit_cost_pct": null,
+        "notes": "UNRESOLVED: specific fund ticker not provided. Cost basis post-transition depends on tax treatment of sale of H-CI-01 (which has a $40,000 unrealised gain)."
+      },
+      {
+        "holding_id": "H-PI-02",
+        "account_id": "ACCT-PI-02",
+        "label": "Fidelity annuity",
+        "asset_class": "annuity",
+        "market_value": "100000",
+        "cost_basis": null,
+        "cost_basis_status": "unknown",
+        "liquidity_status": "restricted",
+        "fractional_eligible": "ineligible",
+        "expense_ratio": null,
+        "exit_cost_pct": null,
+        "notes": "UNRESOLVED: '3.25%' — cannot determine whether this is a payout rate, guaranteed interest rate, or withdrawal rate. Must be clarified before any income projection."
+      },
+      {
+        "holding_id": "H-PI-03",
+        "account_id": "ACCT-PI-03",
+        "label": "Roth IRA (post-conversion)",
+        "asset_class": "unknown",
+        "market_value": "200000",
+        "cost_basis": null,
+        "cost_basis_status": "inapplicable",
+        "liquidity_status": "liquid",
+        "fractional_eligible": "unknown",
+        "expense_ratio": null,
+        "exit_cost_pct": null,
+        "notes": "UNRESOLVED: conversion amount and tax cost not specified. Market value assumed equal to CI Traditional IRA for illustration only."
+      },
+      {
+        "holding_id": "H-PI-04",
+        "account_id": "ACCT-PI-04",
+        "label": "Real-estate fund of funds (retained)",
+        "asset_class": "real_estate",
+        "market_value": "250000",
+        "cost_basis": null,
+        "cost_basis_status": "unknown",
+        "liquidity_status": "illiquid",
+        "fractional_eligible": "ineligible",
+        "expense_ratio": null,
+        "exit_cost_pct": null,
+        "notes": "ILLIQUID — retained unchanged from CI."
+      },
+      {
+        "holding_id": "H-PI-05",
+        "account_id": "ACCT-PI-05",
+        "label": "Alternatives (retained)",
+        "asset_class": "alternatives",
+        "market_value": "100000",
+        "cost_basis": null,
+        "cost_basis_status": "unknown",
+        "liquidity_status": "partially_liquid",
+        "fractional_eligible": "unknown",
+        "expense_ratio": null,
+        "exit_cost_pct": null,
+        "notes": "Retained unchanged from CI.",
+        "sub_holdings": []
+      }
+    ]
+  },
+  "ri_portfolio": null
+}
