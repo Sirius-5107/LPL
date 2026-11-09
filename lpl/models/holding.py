@@ -16,7 +16,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class AssetClass(str, Enum):
@@ -104,6 +104,14 @@ class Holding(BaseModel):
     cost_basis_status: CostBasisStatus = CostBasisStatus.UNKNOWN
     liquidity_status: LiquidityStatus = LiquidityStatus.LIQUID
     fractional_eligible: FractionalTransitionEligibility = FractionalTransitionEligibility.UNKNOWN
+    exchange_eligible: Optional[bool] = Field(
+        None,
+        description=(
+            "Whether this holding is explicitly approved for an in-kind or 1035 exchange. "
+            "None means unknown — do not assume eligible. "
+            "Annuity exchanges must not be assumed available without explicit approval."
+        ),
+    )
     expense_ratio: Optional[Decimal] = Field(
         None, description="Annual expense ratio as decimal fraction."
     )
@@ -112,6 +120,34 @@ class Holding(BaseModel):
     )
     notes: Optional[str] = None
     sub_holdings: list["Holding"] = Field(default_factory=list)
+
+    @field_validator("market_value")
+    @classmethod
+    def _market_value_non_negative(cls, v: Decimal) -> Decimal:
+        if v < Decimal("0"):
+            raise ValueError(f"market_value must be >= 0, got {v}.")
+        return v
+
+    @field_validator("cost_basis")
+    @classmethod
+    def _cost_basis_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"cost_basis must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("expense_ratio")
+    @classmethod
+    def _expense_ratio_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"expense_ratio must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("exit_cost_pct")
+    @classmethod
+    def _exit_cost_pct_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"exit_cost_pct must be >= 0 when provided, got {v}.")
+        return v
 
     @model_validator(mode="after")
     def _cost_basis_consistency(self) -> "Holding":

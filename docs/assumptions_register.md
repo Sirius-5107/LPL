@@ -25,3 +25,4 @@ Status must be one of: CONFIRMED, UNRESOLVED, ASSUMED, INAPPLICABLE.
 | A-18 | Inflation rate assumption | None | UNRESOLVED | Team | Required for real return and real income projections. |
 | A-19 | Traditional IRA underlying holdings | None | UNRESOLVED | Dossier | Holdings within the IRA not specified. Performance analysis requires this. |
 | A-20 | CI portfolio valuation date | None | UNRESOLVED | Dossier | As-of date not provided. Required for time-stamped analysis. |
+| A-21 | CI and PI $700,000 market values are pre-transition reference values | None | CONFIRMED | Architecture decision | These are dossier reference figures, not post-transition values. They do not reflect Roth conversion taxes, surrender charges, annuity exit costs, or any other transition-related costs. Downstream calculations must not assume transition costs have already been deducted. |

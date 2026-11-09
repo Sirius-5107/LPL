@@ -1,4 +1,5 @@
 {
+  "_notes": "Market values in both CI and PI are pre-transition reference values as stated in the dossier. They do not reflect Roth conversion taxes, surrender charges, annuity exit costs, or any other transition costs. CI and PI totals are both shown at $700,000 for reference comparison purposes only. Downstream calculations must not assume that transition costs have already been deducted from these figures.",
   "client_id": "REF-001",
   "name": "Reference Client",
   "age": null,

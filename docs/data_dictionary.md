@@ -95,6 +95,28 @@
 
 ---
 
+---
+
+## New fields added in Day 2 validation hardening
+
+### Holding.exchange_eligible
+
+| Value | Meaning |
+|-------|---------|
+| `true` | Holding has been explicitly confirmed as eligible for an in-kind or 1035 exchange. |
+| `false` | Exchange is explicitly not permitted for this holding. |
+| `null` (default) | Eligibility is unknown. Do NOT assume eligible. Annuity exchanges require explicit confirmation. |
+
+This field is used by `validate_transition_instructions()` to decide whether a RESTRICTED holding or ANNUITY asset can be EXCHANGEd. Without `exchange_eligible=True`, the validator flags the instruction for manual review.
+
+### TransitionInstruction.destination_account_id
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `destination_account_id` | `Optional[str]` | For CONVERT instructions only: the account ID of the receiving account. Required and must resolve to a ROTH_IRA account for a valid IRA-to-Roth conversion. |
+
+---
+
 ## Nominal vs Real
 
 All monetary values in models are nominal (not adjusted for inflation) unless a field

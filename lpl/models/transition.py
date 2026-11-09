@@ -63,10 +63,18 @@ class TransitionInstruction(BaseModel):
     action: TransitionAction
     fraction: Optional[Decimal] = Field(
         None,
-        description="Proportion to sell for SELL_PARTIAL (0 < fraction <= 1).",
+        description="Proportion to sell for SELL_PARTIAL (0 < fraction < 1, exclusive).",
     )
     target_product_id: Optional[str] = None
     target_account_id: Optional[str] = None
+    destination_account_id: Optional[str] = Field(
+        None,
+        description=(
+            "For CONVERT instructions: the account that receives the converted assets. "
+            "Required for IRA-to-Roth conversions — must identify a ROTH_IRA account. "
+            "Validation will fail if this is None for a CONVERT action."
+        ),
+    )
     eligibility: TransitionEligibility = TransitionEligibility.UNKNOWN
     staged_date: Optional[str] = None
     notes: Optional[str] = None

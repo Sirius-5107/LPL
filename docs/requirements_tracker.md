@@ -18,8 +18,8 @@
 | R-14 | No hardcoded reference client in business logic | DONE | load_client_from_json(path) only |
 | R-15 | Module contracts for tax, costs, performance, retirement, decision | DONE | lpl/contracts/ |
 | R-16 | Portfolio reconciliation validation | DONE | validate_portfolio() |
-| R-17 | Allocation weight validation | PARTIAL | Validation infrastructure exists; weight field not yet modelled on Portfolio |
-| R-18 | Illiquid constraint in transition validation | DONE | validate_transition_instructions() |
+| R-17 | Allocation weight validation | DEFERRED | allocation_weight field does not exist on Holding or Portfolio models. The field is not in the current schema. Implementing sum-to-1 validation requires the field to be modelled first. No allocation schema has been invented to satisfy this requirement. |
+| R-18 | Illiquid constraint in transition validation | DONE | validate_transition_instructions() — now also blocks EXCHANGE on ILLIQUID holdings |
 | R-19 | CI/PI separation validation | DONE | validate_ci_pi_separation() |
 | R-20 | Assumptions register | DONE | docs/assumptions_register.md |
 | R-21 | Data dictionary | DONE | docs/data_dictionary.md |
@@ -31,6 +31,14 @@
 | R-27 | No empty placeholder modules | DONE | All modules have substantive content |
 | R-28 | Type hints throughout | DONE | All models and functions are fully typed |
 | R-29 | Explicit exceptions and validation errors | DONE | exceptions.py; pydantic ValidationError on model load |
+
+| R-30 | Fractional transition eligibility enforced in validation | DONE | SELL_PARTIAL blocked for INELIGIBLE holdings; UNKNOWN triggers warning |
+| R-31 | RESTRICTED holding transition requires explicit approval or manual review | DONE | validate_transition_instructions() |
+| R-32 | Annuity EXCHANGE requires explicit exchange_eligible=True | DONE | Holding.exchange_eligible field added; validator enforces |
+| R-33 | CONVERT enforces TRADITIONAL_IRA → ROTH_IRA only | DONE | validate_transition_instructions(); destination_account_id required |
+| R-34 | Negative monetary/percentage fields rejected at model level | DONE | Pydantic field_validators on market_value, cost_basis, expense_ratio, exit_cost_pct |
+| R-35 | ValidationReport instances do not share mutable state | DONE | Field(default_factory=list) |
+| R-36 | validate_calculation_readiness() reports missing/unresolved data | DONE | Returns warnings for UNKNOWN cost basis, ANNUITY asset class, UNKNOWN account type |
 
 ## Open / Partial items for Day 2+
 

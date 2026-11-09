@@ -69,6 +69,13 @@ Stateless functions that accept models and return a `ValidationReport`.
 Errors block calculations. Warnings must be reviewed. Validation never raises
 directly — callers decide how to handle the report.
 
+| Function | Purpose |
+|----------|---------|
+| `validate_portfolio()` | Reconciliation, cost basis warnings, account type checks. |
+| `validate_ci_pi_separation()` | Ensures CI and PI have distinct IDs and labels. |
+| `validate_transition_instructions()` | Enforces illiquid/restricted/fractional/CONVERT rules. |
+| `validate_calculation_readiness()` | Reports missing or unresolved data that would block downstream engines. Does NOT calculate. |
+
 ### contracts/
 Typed `Protocol` interfaces for each calculation engine. These define the
 contract (inputs, outputs, method signatures) without any implementation.
