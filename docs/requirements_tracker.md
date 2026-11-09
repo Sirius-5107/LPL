@@ -33,12 +33,17 @@
 | R-29 | Explicit exceptions and validation errors | DONE | exceptions.py; pydantic ValidationError on model load |
 
 | R-30 | Fractional transition eligibility enforced in validation | DONE | SELL_PARTIAL blocked for INELIGIBLE holdings; UNKNOWN triggers warning |
-| R-31 | RESTRICTED holding transition requires explicit approval or manual review | DONE | validate_transition_instructions() |
-| R-32 | Annuity EXCHANGE requires explicit exchange_eligible=True | DONE | Holding.exchange_eligible field added; validator enforces |
+| R-31 | RESTRICTED holding sale requires explicit sale_eligible=True | DONE | Holding.sale_eligible field; SELL_ALL/SELL_PARTIAL blocked with ERROR if not True |
+| R-31b | RESTRICTED holding exchange requires explicit exchange_eligible=True | DONE | Holding.exchange_eligible field; EXCHANGE blocked with ERROR if not True |
+| R-31c | sale_eligible and exchange_eligible are entirely independent | DONE | Each field governs its own action type only; neither authorises the other |
+| R-32 | Annuity EXCHANGE requires exchange_eligible=True — blocking ERROR | DONE | ANNUITY_EXCHANGE_NOT_APPROVED code; changed from WARNING to ERROR |
 | R-33 | CONVERT enforces TRADITIONAL_IRA → ROTH_IRA only | DONE | validate_transition_instructions(); destination_account_id required |
-| R-34 | Negative monetary/percentage fields rejected at model level | DONE | Pydantic field_validators on market_value, cost_basis, expense_ratio, exit_cost_pct |
+| R-34 | Negative monetary/percentage fields rejected at model level | DONE | Pydantic field_validators on Holding and FeeStructure and AnnuityTerms |
 | R-35 | ValidationReport instances do not share mutable state | DONE | Field(default_factory=list) |
 | R-36 | validate_calculation_readiness() reports missing/unresolved data | DONE | Returns warnings for UNKNOWN cost basis, ANNUITY asset class, UNKNOWN account type |
+| R-37 | Typed calculation-specific readiness via check_calculation_readiness() | DONE | CalculationType enum + CalculationReadinessResult; TAX_BASIS/HISTORICAL_RETURN/ANNUITY_INCOME/COST_ANALYSIS |
+| R-38 | AnnuityTerms rate fields non-negative at model level | DONE | payout_rate, guaranteed_interest_rate, withdrawal_rate, surrender_period_years >= 0 |
+| R-39 | FeeStructure all fee fields non-negative at model level | DONE | expense_ratio, advisory_fee_annual, exit_cost_pct, entry_cost_pct, other_one_time, other_recurring >= 0 |
 
 ## Open / Partial items for Day 2+
 

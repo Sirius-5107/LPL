@@ -107,7 +107,19 @@
 | `false` | Exchange is explicitly not permitted for this holding. |
 | `null` (default) | Eligibility is unknown. Do NOT assume eligible. Annuity exchanges require explicit confirmation. |
 
-This field is used by `validate_transition_instructions()` to decide whether a RESTRICTED holding or ANNUITY asset can be EXCHANGEd. Without `exchange_eligible=True`, the validator flags the instruction for manual review.
+This field governs EXCHANGE instructions **only**. It does **not** authorize a SELL_ALL or SELL_PARTIAL — those require `sale_eligible=True`. The two fields are entirely independent.
+
+For ANNUITY holdings: `exchange_eligible=True` signals explicit eligibility input only. It does **not** imply legal or economic suitability of a 1035 exchange.
+
+### Holding.sale_eligible
+
+| Value | Meaning |
+|-------|---------|
+| `true` | Holding has been explicitly approved for an ordinary sale (SELL_ALL or SELL_PARTIAL). |
+| `false` | Sale is explicitly not permitted for this holding. |
+| `null` (default) | Eligibility is unknown. For RESTRICTED holdings, unknown eligibility blocks the sale with a blocking ERROR. |
+
+This field governs sale instructions **only** for RESTRICTED holdings. It does **not** authorize an EXCHANGE — that requires `exchange_eligible=True`. LIQUID holdings do not require this flag. The two fields are entirely independent and must never substitute for each other.
 
 ### TransitionInstruction.destination_account_id
 

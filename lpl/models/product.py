@@ -15,7 +15,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from lpl.models.assumptions import UnresolvedStatus
 
@@ -51,19 +51,47 @@ class AnnuityTerms(BaseModel):
     """
 
     payout_rate: Optional[Decimal] = Field(
-        None, description="Annual payout as % of account balance."
+        None, description="Annual payout as % of account balance (decimal fraction, e.g. 0.03)."
     )
     guaranteed_interest_rate: Optional[Decimal] = Field(
-        None, description="Annual crediting rate applied to balance."
+        None, description="Annual crediting rate applied to balance (decimal fraction)."
     )
     withdrawal_rate: Optional[Decimal] = Field(
-        None, description="Max free withdrawal % per year."
+        None, description="Max free withdrawal % per year (decimal fraction)."
     )
     rate_description: str = Field(
         ..., description="Verbatim rate description from the product dossier."
     )
     rate_interpretation: RateInterpretation = RateInterpretation.UNRESOLVED
     surrender_period_years: Optional[int] = None
+
+    @field_validator("payout_rate")
+    @classmethod
+    def _payout_rate_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"payout_rate must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("guaranteed_interest_rate")
+    @classmethod
+    def _guaranteed_interest_rate_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"guaranteed_interest_rate must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("withdrawal_rate")
+    @classmethod
+    def _withdrawal_rate_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"withdrawal_rate must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("surrender_period_years")
+    @classmethod
+    def _surrender_period_non_negative(cls, v: Optional[int]) -> Optional[int]:
+        if v is not None and v < 0:
+            raise ValueError(f"surrender_period_years must be >= 0 when provided, got {v}.")
+        return v
 
 
 class FeeStructure(BaseModel):
@@ -89,6 +117,48 @@ class FeeStructure(BaseModel):
     other_one_time: Optional[Decimal] = None
     other_recurring: Optional[Decimal] = None
     notes: Optional[str] = None
+
+    @field_validator("expense_ratio")
+    @classmethod
+    def _expense_ratio_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"expense_ratio must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("advisory_fee_annual")
+    @classmethod
+    def _advisory_fee_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"advisory_fee_annual must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("exit_cost_pct")
+    @classmethod
+    def _exit_cost_pct_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"exit_cost_pct must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("entry_cost_pct")
+    @classmethod
+    def _entry_cost_pct_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"entry_cost_pct must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("other_one_time")
+    @classmethod
+    def _other_one_time_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"other_one_time must be >= 0 when provided, got {v}.")
+        return v
+
+    @field_validator("other_recurring")
+    @classmethod
+    def _other_recurring_non_negative(cls, v: Optional[Decimal]) -> Optional[Decimal]:
+        if v is not None and v < Decimal("0"):
+            raise ValueError(f"other_recurring must be >= 0 when provided, got {v}.")
+        return v
 
 
 class Investment(BaseModel):

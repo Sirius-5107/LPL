@@ -109,7 +109,17 @@ class Holding(BaseModel):
         description=(
             "Whether this holding is explicitly approved for an in-kind or 1035 exchange. "
             "None means unknown — do not assume eligible. "
-            "Annuity exchanges must not be assumed available without explicit approval."
+            "Annuity exchanges must not be assumed available without explicit approval. "
+            "This field does NOT authorize a SELL_ALL or SELL_PARTIAL — use sale_eligible for that."
+        ),
+    )
+    sale_eligible: Optional[bool] = Field(
+        None,
+        description=(
+            "Whether this holding is explicitly approved for an ordinary sale (SELL_ALL or SELL_PARTIAL). "
+            "Applies to RESTRICTED holdings only; LIQUID holdings do not require this flag. "
+            "None means unknown — conservative validation will block or flag for manual review. "
+            "Must never be inferred from exchange_eligible; they are entirely separate approvals."
         ),
     )
     expense_ratio: Optional[Decimal] = Field(

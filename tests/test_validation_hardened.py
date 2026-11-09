@@ -49,6 +49,7 @@ def _holding(
     asset_class: AssetClass = AssetClass.EQUITY,
     cost_basis_status: CostBasisStatus = CostBasisStatus.KNOWN,
     exchange_eligible: bool | None = None,
+    sale_eligible: bool | None = None,
 ) -> Holding:
     cost_basis = Decimal("1") if cost_basis_status == CostBasisStatus.KNOWN else None
     return Holding(
@@ -62,6 +63,7 @@ def _holding(
         fractional_eligible=fractional,
         asset_class=asset_class,
         exchange_eligible=exchange_eligible,
+        sale_eligible=sale_eligible,
     )
 
 
@@ -212,47 +214,66 @@ class TestRestrictedAndIlliquid:
         errors = [i for i in report.errors() if i.code == "ILLIQUID_TRANSITION_ATTEMPT"]
         assert len(errors) == 0
 
-    def test_restricted_sell_unknown_eligibility_requires_manual_review(self):
-        """Restricted holding with no exchange_eligible flag → WARNING for manual review."""
+    def test_restricted_sell_unknown_sale_eligibility_is_blocking_error(self):
+        """Restricted holding with sale_eligible=None → blocking ERROR (not a warning).
+
+        sale_eligible governs sales. exchange_eligible is irrelevant here.
+        Unknown eligibility must never silently permit a restricted sale.
+        """
         h = _holding("H1", liquidity=LiquidityStatus.RESTRICTED,
                      exchange_eligible=None, cost_basis_status=CostBasisStatus.UNKNOWN)
         p = _portfolio([h])
         instr = _instr(TransitionAction.SELL_ALL)
         report = validate_transition_instructions([instr], p)
-        warnings = [i for i in report.warnings() if i.code == "RESTRICTED_TRANSITION_REQUIRES_MANUAL_REVIEW"]
-        assert len(warnings) == 1
-        # Must not be a silent pass
-        assert not any(i.level == ValidationLevel.INFO and "RESTRICTED" in i.code for i in report.issues)
+        errors = [i for i in report.errors() if i.code == "RESTRICTED_SALE_ELIGIBILITY_UNKNOWN"]
+        assert len(errors) == 1
+        # Must be a blocking ERROR, not a warning or info
+        assert report.has_errors()
 
     def test_restricted_sell_explicitly_ineligible_blocked(self):
+        """sale_eligible=False → blocking ERROR. (exchange_eligible is irrelevant to sales.)"""
         h = _holding("H1", liquidity=LiquidityStatus.RESTRICTED,
-                     exchange_eligible=False, cost_basis_status=CostBasisStatus.UNKNOWN)
+                     sale_eligible=False, exchange_eligible=False,
+                     cost_basis_status=CostBasisStatus.UNKNOWN)
         p = _portfolio([h])
         instr = _instr(TransitionAction.SELL_ALL)
         report = validate_transition_instructions([instr], p)
-        errors = [i for i in report.errors() if i.code == "RESTRICTED_TRANSITION_NOT_ELIGIBLE"]
+        errors = [i for i in report.errors() if i.code == "RESTRICTED_SALE_NOT_ELIGIBLE"]
         assert len(errors) == 1
 
-    def test_restricted_sell_explicitly_eligible_no_restriction_error(self):
-        """If exchange_eligible=True, no RESTRICTED_TRANSITION error (annuity rule may still warn)."""
+    def test_restricted_sell_exchange_eligible_does_not_authorize_sale(self):
+        """exchange_eligible=True must NOT authorize a SELL. sale_eligible is required.
+
+        These fields are entirely independent. This test verifies the separation.
+        """
         h = _holding("H1", liquidity=LiquidityStatus.RESTRICTED,
                      exchange_eligible=True, cost_basis_status=CostBasisStatus.UNKNOWN)
         p = _portfolio([h])
         instr = _instr(TransitionAction.SELL_ALL)
         report = validate_transition_instructions([instr], p)
-        errors = [i for i in report.errors() if "RESTRICTED_TRANSITION" in i.code]
-        assert len(errors) == 0
+        # exchange_eligible=True must NOT clear the sale restriction
+        errors = [i for i in report.errors() if "RESTRICTED_SALE" in i.code]
+        assert len(errors) >= 1, (
+            "exchange_eligible=True must not authorize a SELL on a RESTRICTED holding. "
+            "sale_eligible must be explicitly True for sales."
+        )
 
-    def test_annuity_exchange_without_explicit_eligibility_flagged(self):
-        """ANNUITY EXCHANGE without exchange_eligible=True must require manual review."""
+    def test_annuity_exchange_without_explicit_eligibility_is_blocking_error(self):
+        """ANNUITY EXCHANGE without exchange_eligible=True → blocking ERROR.
+
+        A WARNING was insufficient; this is now a blocking ERROR.
+        exchange_eligible=True signals explicit eligibility input only — it does NOT
+        imply legal or economic suitability of a 1035 exchange.
+        """
         h = _holding("H1", asset_class=AssetClass.ANNUITY,
                      liquidity=LiquidityStatus.RESTRICTED,
                      exchange_eligible=None, cost_basis_status=CostBasisStatus.UNKNOWN)
         p = _portfolio([h])
         instr = _instr(TransitionAction.EXCHANGE)
         report = validate_transition_instructions([instr], p)
-        warnings = [i for i in report.warnings() if i.code == "ANNUITY_EXCHANGE_NOT_CONFIRMED"]
-        assert len(warnings) >= 1
+        errors = [i for i in report.errors() if i.code == "ANNUITY_EXCHANGE_NOT_APPROVED"]
+        assert len(errors) >= 1
+        assert report.has_errors()
 
     def test_annuity_exchange_with_explicit_eligibility_no_annuity_warning(self):
         """ANNUITY with exchange_eligible=True: ANNUITY_EXCHANGE_NOT_CONFIRMED not raised."""

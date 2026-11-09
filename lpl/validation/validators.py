@@ -16,13 +16,25 @@ Rules implemented:
 8.  SELL_PARTIAL requires a fraction strictly in (0, 1) exclusive.
 9.  SELL_PARTIAL rejected if holding is not ELIGIBLE for fractional transitions.
 10. SELL with a fraction set produces a warning (fraction is ignored for full sales).
-11. RESTRICTED holdings: SELL and EXCHANGE rejected unless explicitly approved.
-12. ANNUITY holdings: EXCHANGE rejected unless exchange_eligible=True.
+11. RESTRICTED holdings — sale_eligible and exchange_eligible are entirely independent:
+    - SELL_ALL / SELL_PARTIAL: blocked unless sale_eligible=True (ERROR).
+      exchange_eligible=True does NOT authorize a sale.
+    - EXCHANGE: blocked unless exchange_eligible=True (ERROR).
+      sale_eligible=True does NOT authorize an exchange.
+    - If the required eligibility flag is None (unknown), block with ERROR.
+      Unknown eligibility must never silently permit a restricted transition.
+12. ANNUITY holdings: EXCHANGE requires exchange_eligible=True (ERROR, not warning).
+    exchange_eligible=True signals explicit eligibility input only — it does NOT imply
+    legal or economic suitability of a 1035 exchange.
+    Confirm with the product provider before proceeding.
 13. CONVERT instructions: source must be TRADITIONAL_IRA; destination must be ROTH_IRA;
     destination_account_id must be provided.
 
 validate_calculation_readiness() reports whether missing or unresolved data would
 block downstream engine calculations. It does not perform any calculations.
+
+check_calculation_readiness() provides a typed, calculation-specific readiness result
+that downstream engines can gate on without interpreting a generic warning list.
 """
 
 from __future__ import annotations
@@ -41,7 +53,7 @@ from lpl.models.holding import (
     LiquidityStatus,
 )
 from lpl.models.portfolio import Portfolio, PortfolioLabel
-from lpl.models.product import RateInterpretation
+from lpl.models.product import Investment, RateInterpretation
 from lpl.models.transition import TransitionInstruction, TransitionAction
 from lpl.exceptions import CIandPIConflictError  # noqa: F401 — re-exported for callers
 
@@ -272,57 +284,96 @@ def validate_transition_instructions(
             # Continue checking other rules even on illiquid error.
 
         # -----------------------------------------------------------------
-        # Rule B: RESTRICTED holdings — conservative handling
-        # A RESTRICTED holding (e.g. annuity in surrender period) may have
-        # exit penalties or waiting periods. We do not invent surrender rules.
-        # If exchange_eligible is not explicitly True, flag for manual review.
+        # Rule B: RESTRICTED holdings — conservative, separate eligibility gates.
+        #
+        # sale_eligible  governs SELL_ALL and SELL_PARTIAL.
+        # exchange_eligible governs EXCHANGE.
+        # These fields are entirely independent — one must NEVER authorize the other.
+        #
+        # We do not invent surrender schedules or penalties.
+        # If the required eligibility flag is not explicitly True, block with ERROR.
         # -----------------------------------------------------------------
-        if h.liquidity_status == LiquidityStatus.RESTRICTED and instr.action in (
-            TransitionAction.SELL_ALL,
-            TransitionAction.EXCHANGE,
-        ):
-            if h.exchange_eligible is True:
-                # Explicitly approved — allow (further annuity rule below may still flag)
-                pass
-            elif h.exchange_eligible is False:
-                report.add(ValidationIssue(
-                    level=ValidationLevel.ERROR,
-                    code="RESTRICTED_TRANSITION_NOT_ELIGIBLE",
-                    message=(
-                        f"Instruction '{instr.instruction_id}': holding '{h.holding_id}' "
-                        f"is RESTRICTED and exchange_eligible=False. "
-                        f"Cannot perform {instr.action.value}."
-                    ),
-                    entity_id=instr.instruction_id,
-                ))
-            else:
-                # exchange_eligible is None — unknown; require manual review
-                report.add(ValidationIssue(
-                    level=ValidationLevel.WARNING,
-                    code="RESTRICTED_TRANSITION_REQUIRES_MANUAL_REVIEW",
-                    message=(
-                        f"Instruction '{instr.instruction_id}': holding '{h.holding_id}' "
-                        f"is RESTRICTED and exchange eligibility is unknown. "
-                        f"The {instr.action.value} instruction requires manual review "
-                        "before execution. Do not assume exit is cost-free or permitted."
-                    ),
-                    entity_id=instr.instruction_id,
-                ))
+        if h.liquidity_status == LiquidityStatus.RESTRICTED:
+            if instr.action in _SELL_ACTIONS:
+                # Gate on sale_eligible — exchange_eligible is irrelevant here.
+                if h.sale_eligible is True:
+                    pass  # Explicitly approved for sale.
+                elif h.sale_eligible is False:
+                    report.add(ValidationIssue(
+                        level=ValidationLevel.ERROR,
+                        code="RESTRICTED_SALE_NOT_ELIGIBLE",
+                        message=(
+                            f"Instruction '{instr.instruction_id}': holding '{h.holding_id}' "
+                            f"is RESTRICTED and sale_eligible=False. "
+                            f"Cannot perform {instr.action.value}. "
+                            "Note: exchange_eligible does not authorize a sale."
+                        ),
+                        entity_id=instr.instruction_id,
+                    ))
+                else:
+                    # sale_eligible is None — eligibility unknown; block.
+                    report.add(ValidationIssue(
+                        level=ValidationLevel.ERROR,
+                        code="RESTRICTED_SALE_ELIGIBILITY_UNKNOWN",
+                        message=(
+                            f"Instruction '{instr.instruction_id}': holding '{h.holding_id}' "
+                            f"is RESTRICTED and sale_eligible is not set. "
+                            f"Cannot perform {instr.action.value} without explicit sale approval. "
+                            "Do not assume exit is cost-free or permitted. "
+                            "Note: exchange_eligible does not authorize a sale."
+                        ),
+                        entity_id=instr.instruction_id,
+                    ))
+
+            elif instr.action == TransitionAction.EXCHANGE:
+                # Gate on exchange_eligible — sale_eligible is irrelevant here.
+                if h.exchange_eligible is True:
+                    pass  # Explicitly approved for exchange.
+                elif h.exchange_eligible is False:
+                    report.add(ValidationIssue(
+                        level=ValidationLevel.ERROR,
+                        code="RESTRICTED_EXCHANGE_NOT_ELIGIBLE",
+                        message=(
+                            f"Instruction '{instr.instruction_id}': holding '{h.holding_id}' "
+                            f"is RESTRICTED and exchange_eligible=False. "
+                            "Cannot perform EXCHANGE. "
+                            "Note: sale_eligible does not authorize an exchange."
+                        ),
+                        entity_id=instr.instruction_id,
+                    ))
+                else:
+                    # exchange_eligible is None — eligibility unknown; block.
+                    report.add(ValidationIssue(
+                        level=ValidationLevel.ERROR,
+                        code="RESTRICTED_EXCHANGE_ELIGIBILITY_UNKNOWN",
+                        message=(
+                            f"Instruction '{instr.instruction_id}': holding '{h.holding_id}' "
+                            f"is RESTRICTED and exchange_eligible is not set. "
+                            "Cannot perform EXCHANGE without explicit exchange approval. "
+                            "Note: sale_eligible does not authorize an exchange."
+                        ),
+                        entity_id=instr.instruction_id,
+                    ))
 
         # -----------------------------------------------------------------
-        # Rule C: ANNUITY asset class — EXCHANGE requires explicit approval
-        # 1035 exchanges are not universally available; do not assume.
+        # Rule C: ANNUITY asset class — EXCHANGE requires explicit approval.
+        # This is a BLOCKING ERROR, not a warning.
+        # exchange_eligible=True signals explicit eligibility input only.
+        # It does NOT imply legal or economic suitability of a 1035 exchange.
+        # 1035 exchange availability must be confirmed with the product provider.
         # -----------------------------------------------------------------
         if h.asset_class == AssetClass.ANNUITY and instr.action == TransitionAction.EXCHANGE:
             if h.exchange_eligible is not True:
                 report.add(ValidationIssue(
-                    level=ValidationLevel.WARNING,
-                    code="ANNUITY_EXCHANGE_NOT_CONFIRMED",
+                    level=ValidationLevel.ERROR,
+                    code="ANNUITY_EXCHANGE_NOT_APPROVED",
                     message=(
                         f"Instruction '{instr.instruction_id}': holding '{h.holding_id}' "
                         "is an ANNUITY and exchange_eligible is not explicitly True. "
-                        "1035 exchange availability must be confirmed with the product "
-                        "provider. This instruction requires manual review."
+                        "EXCHANGE is blocked. Confirm exchange eligibility with the product "
+                        "provider before proceeding. "
+                        "Note: exchange_eligible=True signals explicit eligibility input only "
+                        "— it does not imply legal or economic suitability of a 1035 exchange."
                     ),
                     entity_id=instr.instruction_id,
                 ))
@@ -533,3 +584,128 @@ def validate_calculation_readiness(portfolio: Portfolio) -> ValidationReport:
             ))
 
     return report
+
+
+# ---------------------------------------------------------------------------
+# Typed calculation-specific readiness check
+# ---------------------------------------------------------------------------
+
+class CalculationType(str, Enum):
+    """The type of calculation a downstream engine wants to perform.
+
+    Used with check_calculation_readiness() to gate on specific data requirements
+    rather than interpreting a generic warning list.
+    """
+
+    TAX_BASIS = "tax_basis"
+    """Requires known cost basis for each holding (gain/loss, after-tax proceeds)."""
+
+    HISTORICAL_RETURN = "historical_return"
+    """Does NOT require cost basis — return history is independent of tax basis."""
+
+    ANNUITY_INCOME = "annuity_income"
+    """Requires resolved AnnuityTerms.rate_interpretation for each annuity holding."""
+
+    COST_ANALYSIS = "cost_analysis"
+    """Requires product fee data for each holding."""
+
+
+class CalculationReadinessResult(BaseModel):
+    """Readiness of a single holding for a specific calculation type.
+
+    is_ready=False means the calculation cannot safely proceed for this holding.
+    is_ready=True means no data gap was found — it does not claim regulatory
+    approval or suitability.
+    """
+
+    holding_id: str
+    calculation_type: CalculationType
+    is_ready: bool
+    blocking_reason: Optional[str] = None  # None when is_ready=True
+
+
+def check_calculation_readiness(
+    portfolio: Portfolio,
+    calculation_type: CalculationType,
+    product_map: Optional[dict[str, Investment]] = None,
+) -> list[CalculationReadinessResult]:
+    """Return per-holding readiness for a specific calculation type.
+
+    This function performs NO calculations. It inspects data availability
+    and returns a typed result per holding that downstream engines can gate on.
+
+    Parameters
+    ----------
+    portfolio:
+        The portfolio whose holdings are checked.
+    calculation_type:
+        Which calculation is being requested.
+    product_map:
+        Optional mapping of holding_id -> Investment. Required for calculations
+        that need product data (ANNUITY_INCOME, COST_ANALYSIS).
+
+    Returns
+    -------
+    list[CalculationReadinessResult]
+        One entry per holding in the portfolio.
+    """
+    results: list[CalculationReadinessResult] = []
+
+    for h in portfolio.holdings:
+        reason: Optional[str] = None
+
+        if calculation_type == CalculationType.TAX_BASIS:
+            if h.cost_basis_status in (CostBasisStatus.UNKNOWN, CostBasisStatus.PARTIAL):
+                reason = (
+                    f"cost_basis_status={h.cost_basis_status.value} — "
+                    "tax basis calculation requires a known cost basis. "
+                    "Cost basis must not be assumed zero."
+                )
+
+        elif calculation_type == CalculationType.HISTORICAL_RETURN:
+            # Cost basis is not needed for historical return; no block.
+            reason = None
+
+        elif calculation_type == CalculationType.ANNUITY_INCOME:
+            if h.asset_class == AssetClass.ANNUITY:
+                if product_map is None:
+                    reason = (
+                        "No product_map provided — cannot inspect AnnuityTerms "
+                        "for this annuity holding."
+                    )
+                else:
+                    product = product_map.get(h.holding_id)
+                    if product is None:
+                        reason = (
+                            f"Holding '{h.holding_id}' is an ANNUITY but no product "
+                            "was found in product_map."
+                        )
+                    elif product.annuity_terms is None:
+                        reason = (
+                            f"Product for holding '{h.holding_id}' has no AnnuityTerms. "
+                            "Annuity income calculation cannot proceed."
+                        )
+                    elif product.annuity_terms.rate_interpretation == RateInterpretation.UNRESOLVED:
+                        reason = (
+                            f"AnnuityTerms.rate_interpretation is UNRESOLVED for holding "
+                            f"'{h.holding_id}'. Resolve whether the dossier rate is a "
+                            "payout rate, guaranteed interest rate, or withdrawal rate "
+                            "before computing income projections."
+                        )
+            # Non-annuity holdings: ANNUITY_INCOME check does not apply.
+
+        elif calculation_type == CalculationType.COST_ANALYSIS:
+            if product_map is None or h.holding_id not in product_map:
+                reason = (
+                    f"No product data found for holding '{h.holding_id}' in product_map. "
+                    "Cost analysis requires fee structure from the associated product."
+                )
+
+        results.append(CalculationReadinessResult(
+            holding_id=h.holding_id,
+            calculation_type=calculation_type,
+            is_ready=(reason is None),
+            blocking_reason=reason,
+        ))
+
+    return results
